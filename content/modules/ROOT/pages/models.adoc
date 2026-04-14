@@ -1,0 +1,223 @@
+= Speech Models
+:source-highlighter: rouge
+
+++++
+<div id="lightbox"></div>
+++++
+
+Deploy and test the Speech to Text (Whisper) and Text to Speech (Higgs-Audio) models using RHOAI.
+
+These two models form the speech layer of the voice agent pipeline:
+
+```
+User Speech → [Whisper STT] → Text → [LLM Agent] → Text → [Higgs-Audio TTS] → Speech
+```
+
+[cols="1,1,1,1",options="header"]
+|===
+| Model | Type | GPU | API Endpoint
+
+| Whisper
+| Speech to Text
+| MIG 1g.18gb
+| `/v1/audio/transcriptions`
+
+| Higgs-Audio
+| Text to Speech
+| MIG 2g.35gb
+| `/v1/audio/speech`
+|===
+
+== Run the Notebook
+
+The fastest way through this section is the notebook. It deploys both models, waits for them, and tests the APIs — all from your workbench.
+
+=== Prerequisites
+
+Open a **Terminal** in JupyterLab and log in to OpenShift:
+
+[.copypaste,source,bash]
+----
+oc login --server=https://api.ocp.cloud.rhai-tmm.dev:6443 -u <username> -p <password>
+oc project ai-roadshow
+----
+
+=== Open and run
+
+In the _File Explorer_, navigate to `voice-agents/content/notebooks/` and open:
+
+https://github.com/eformat/voice-agents/blob/main/content/notebooks/1-models.ipynb[1-models.ipynb^]
+
+Run all cells (**Run > Run All Cells**). The notebook will:
+
+1. Create the Hugging Face secret (you need to paste your token)
+2. Deploy Whisper and verify it is ready
+3. Generate a test WAV and transcribe it with Whisper
+4. Deploy Higgs-Audio and verify it is ready
+5. Send text to the TTS endpoint and play the audio inline
+6. Measure TTS generation speed (gen x)
+
+++++
+<div class="imageblock" id="models-notebook">
+  <img src="_images/models-notebook-top.png" alt="Models Notebook" class="zoom">
+</div>
+++++
+
+[NOTE]
+====
+Models need GPU resources (MIG slices) and take a few minutes to start. Re-run the wait cells until you see `Ready = True` for Whisper and `1/1 Running` for Higgs-Audio.
+====
+
+If the notebook completes successfully, skip to the next section. The rest of this page describes each step in detail.
+
+'''
+
+== Step-by-step Reference
+
+=== Hugging Face Secret
+
+The Higgs-Audio model downloads weights from Hugging Face. Create a secret with your HF token:
+
+[.copypaste,source,bash]
+----
+oc apply -f - <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: hf-secret
+type: Opaque
+stringData:
+  token: <your-huggingface-token>
+EOF
+----
+
+=== Speech to Text — Whisper
+
+Whisper converts spoken audio into text. We deploy the `whisper-large-v3-turbo` model (quantized W4A16) from the Red Hat model registry using the KServe `LLMInferenceService` custom resource. It runs on a small GPU slice (MIG 1g.18gb).
+
+==== Deploy
+
+[.copypaste,source,bash]
+----
+oc apply -f ai-voice-agent/deploy/models/whisper/whisper-llmisvc.yaml
+----
+
+Wait for the pod to show `2/2 Running`:
+
+[.copypaste,source,bash]
+----
+oc get pods -l app.kubernetes.io/name=whisper
+----
+
+Check the model is ready:
+
+[.copypaste,source,bash]
+----
+oc get llmisvc whisper -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'
+----
+
+==== Test
+
+Get the model URL and service account token:
+
+[.copypaste,source,bash]
+----
+MODEL_URL=$(oc get llmisvc whisper -o jsonpath='{.status.addresses[?(@.name=="gateway-external")].url}' | tr ' ' '\n' | grep https)
+ACCESS_TOKEN=$(oc get secret whisper-sa-whisper-sa -o jsonpath='{.data.token}' | base64 -d)
+----
+
+Send an audio file to the transcription endpoint:
+
+[.copypaste,source,bash]
+----
+curl -s -X POST ${MODEL_URL}/v1/audio/transcriptions \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+  --form file=@test.wav \
+  --form model=whisper | jq .
+----
+
+Expected response:
+
+[source,json]
+----
+{
+  "text": " Hello.",
+  "usage": {
+    "type": "duration",
+    "seconds": 3
+  }
+}
+----
+
+=== Text to Speech — Higgs-Audio
+
+Higgs-Audio generates natural-sounding speech from text, completing the voice agent loop. It runs as a standard Kubernetes Deployment with vLLM on a GPU (MIG 2g.35gb slice) and downloads the model from Hugging Face.
+
+==== Deploy
+
+[.copypaste,source,bash]
+----
+oc apply -f ai-voice-agent/deploy/models/higgs-audio/higgs-audio-v2-deployment.yaml
+----
+
+Wait for the pod to show `1/1 Running` (this may take several minutes on first start as it downloads model weights):
+
+[.copypaste,source,bash]
+----
+oc get pods -l app=higgs-audio-predictor
+oc rollout status deployment/higgs-audio-predictor
+----
+
+==== Test
+
+Send a text prompt to the TTS endpoint:
+
+[.copypaste,source,bash]
+----
+curl -X POST http://higgs-audio-predictor:8080/v1/audio/speech \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "higgs-audio-v2-generation-3B-base",
+    "voice": "belinda",
+    "input": "What would you like on your pizza?",
+    "response_format": "pcm"
+  }' \
+  --output - | ffmpeg -f s16le -ar 24000 -ac 1 -i pipe:0 -f wav - | ffplay -nodisp -autoexit -
+----
+
+This sends text to the TTS model, receives PCM audio (signed 16-bit, 24kHz, mono), converts to WAV with ffmpeg, and plays it with ffplay.
+
+=== Measure TTS Generation Speed (gen x)
+
+For a real-time voice agent, TTS must generate audio faster than real-time — otherwise the user hears silence while waiting. We measure this as *gen x*:
+
+----
+gen x = audio seconds produced / wall clock seconds elapsed
+----
+
+A gen x of *1.0* means real-time. Above 1.0 means the model generates faster than playback — the higher the better. Below 1.0 and the user will experience latency gaps.
+
+Send a few prompts and measure the generation speed:
+
+[.copypaste,source,bash]
+----
+for prompt in \
+  "What would you like on your pizza?" \
+  "Your order has been placed and will be ready in about twenty minutes." \
+  "We have pepperoni, mushrooms, olives, onions, and extra cheese available as toppings."
+do
+  START=$(date +%s%N)
+  curl -s -X POST http://higgs-audio-predictor:8080/v1/audio/speech \
+    -H "Content-Type: application/json" \
+    -d "{\"model\":\"higgs-audio-v2-generation-3B-base\",\"voice\":\"belinda\",\"input\":\"${prompt}\",\"response_format\":\"pcm\"}" \
+    --output /tmp/tts-bench.pcm
+  END=$(date +%s%N)
+
+  WALL_MS=$(( (END - START) / 1000000 ))
+  PCM_BYTES=$(stat -c%s /tmp/tts-bench.pcm)
+  AUDIO_MS=$(( PCM_BYTES * 1000 / (24000 * 2) ))
+  echo "${prompt}: audio=${AUDIO_MS}ms wall=${WALL_MS}ms gen_x=$(echo "scale=1; ${AUDIO_MS}.0 / ${WALL_MS}.0" | bc)x"
+done
+----
+
+On a MIG 2g.35gb slice, expect gen x values around *2–3x* real-time once the model is warm (the first request may be slower due to model warm-up).

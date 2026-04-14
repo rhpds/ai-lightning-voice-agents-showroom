@@ -1,0 +1,315 @@
+= Pizza Shop Demo
+:source-highlighter: rouge
+:imagesdir: ../images
+
+++++
+<div id="lightbox"></div>
+++++
+
+Putting it all together — deploy the voice agent app, connect the speech models to an LLM agent, and have a spoken conversation about pizza.
+
+video::X-BNR-7Umiw[youtube]
+
+The app follows the **voice sandwich** pattern:
+
+```
+Browser Mic → [Whisper STT] → Text → [LLM Agent Graph] → Text → [Higgs-Audio TTS] → Speaker
+```
+
+[cols="1,1,2",options="header"]
+|===
+| Component | Description | Port
+
+| Backend
+| Python WebSocket server (LangGraph agent)
+| 8765
+
+| Frontend
+| Next.js UI served by Nginx
+| 8080
+|===
+
+== Run the Notebook
+
+The fastest way to deploy and test the pizza shop app is the notebook. It gathers credentials, runs Helm install, and tests the WebSocket — all from your workbench.
+
+=== Prerequisites
+
+1. Complete the **Models** notebook first (speech models must be running)
+2. Open a **Terminal** in JupyterLab and log in to OpenShift:
+
+[.copypaste,source,bash]
+----
+oc login --server=https://api.ocp.cloud.rhai-tmm.dev:6443 -u <username> -p <password>
+oc project ai-roadshow
+----
+
+=== Open and run
+
+In the _File Explorer_, navigate to `voice-agents/content/notebooks/` and open:
+
+https://github.com/eformat/voice-agents/blob/main/content/notebooks/2-pizza-shop.ipynb[2-pizza-shop.ipynb^]
+
+Run all cells (**Run > Run All Cells**). The notebook will:
+
+1. Verify speech models are running
+2. Gather MaaS LLM and STT/TTS credentials
+3. Deploy the app via Helm chart
+4. Wait for backend and frontend pods
+5. Test the agent via WebSocket (text input, no mic needed)
+6. Provide a link to the Web UI
+
+[NOTE]
+====
+The MaaS LLM token requires your personal service account from the enterprise tier namespace. The notebook will prompt you to fill in your SA name. Run `oc get sa -n maas-default-gateway-tier-enterprise` to find it.
+====
+
+If the notebook completes successfully, open the Web UI link and try the voice experience. The rest of this page covers the agent architecture and manual deployment steps.
+
+'''
+
+== The Web UI
+
+++++
+<div class="imageblock" id="pizza-shop-ui">
+  <img src="_images/pizza-shop-ui.png" alt="Pizza Shop UI" class="zoom">
+</div>
+++++
+
+The UI connects to the backend WebSocket automatically. Use the **TALK** button to record with your microphone, or type a message in the text box.
+
+++++
+<div class="imageblock" id="pizza-shop-conversation">
+  <img src="_images/pizza-shop-conversation.png" alt="Pizza Shop Conversation" class="zoom">
+</div>
+++++
+
+The conversation history shows agent routing — the supervisor decides which specialist agent handles each request.
+
+'''
+
+== Agent Architecture
+
+=== Agent Graph
+
+The pizza agent graph shows how different agents collaborate:
+
+++++
+<div class="imageblock">
+  <img src="_images/agent-graph.png" alt="Agent Graph" class="zoom">
+</div>
+++++
+
+==== Creating Agents
+
+Agents are created with specific roles and responsibilities:
+
+++++
+<div class="imageblock">
+  <img src="_images/agent-creation.png" alt="Agent Creation" class="zoom">
+</div>
+++++
+
+Each agent has:
+
+* A defined role (supervisor, pizza type selector, order calculator, delivery handler)
+* Specific system prompts
+* Access to tools and functions
+* Connection to the LLM
+
+==== Supervisor Model Configuration
+
+The supervisor agent coordinates all other agents:
+
+++++
+<div class="imageblock">
+  <img src="_images/supervisor-model-configuration.png" alt="Supervisor Model Configuration" class="zoom">
+</div>
+++++
+
+==== Invoking Agents
+
+Agents are invoked through the LangGraph framework:
+
+++++
+<div class="imageblock">
+  <img src="_images/invoking-agents.png" alt="Invoking Agents" class="zoom">
+</div>
+++++
+
+==== Conversation State
+
+The system maintains conversation state across interactions:
+
+++++
+<div class="imageblock">
+  <img src="_images/conversation-state.png" alt="Conversation State" class="zoom">
+</div>
+++++
+
+State includes: current pizza type, order details, delivery information, conversation history, and interrupt flags.
+
+=== Agent Prompts
+
+==== Supervisor
+
+The supervisor manages the flow between agents:
+
+++++
+<div class="imageblock">
+  <img src="_images/supervisor-agent-prompt.png" alt="Supervisor Agent Prompt" class="zoom">
+</div>
+++++
+
+==== Pizza Type
+
+Handles pizza selection:
+
+++++
+<div class="imageblock">
+  <img src="_images/pizza-agent-prompt.png" alt="Pizza Agent Prompt" class="zoom">
+</div>
+++++
+
+==== Order Total
+
+Calculates order costs:
+
+++++
+<div class="imageblock">
+  <img src="_images/order-agent-prompt.png" alt="Order Agent Prompt" class="zoom">
+</div>
+++++
+
+==== Delivery
+
+Manages delivery details:
+
+++++
+<div class="imageblock">
+  <img src="_images/delivery-agent-prompt.png" alt="Delivery Agent Prompt" class="zoom">
+</div>
+++++
+
+=== Agent Interrupts
+
+The system handles interruptions gracefully:
+
+++++
+<div class="imageblock">
+  <img src="_images/agent-interrupt.png" alt="Agent Interrupt" class="zoom">
+</div>
+++++
+
+Interrupts allow canceling operations, switching agents, handling user corrections, and managing error states.
+
+=== LangGraph and Agent Handoffs
+
+==== Supervisor Routing
+
+The supervisor routes requests to the appropriate specialist agent:
+
+++++
+<div class="imageblock">
+  <img src="_images/supervisor-routing.png" alt="Supervisor Routing" class="zoom">
+</div>
+++++
+
+Routing decisions are based on user intent, current conversation state, and agent capabilities.
+
+==== Wait for User Speech
+
+The system pauses to wait for user input:
+
+++++
+<div class="imageblock">
+  <img src="_images/wait-for-user-speech.png" alt="Wait for User Speech" class="zoom">
+</div>
+++++
+
+==== Handoff Flow
+
+1. User speaks -> Speech converted to text (STT)
+2. Supervisor receives text and analyzes intent
+3. Supervisor routes to appropriate agent
+4. Agent processes request and generates response
+5. Response converted to speech (TTS)
+6. System waits for next user input
+
+'''
+
+== Step-by-step Deployment
+
+=== Gather Credentials
+
+The backend needs tokens for the LLM (MaaS), STT (Whisper), and TTS (Higgs-Audio).
+
+Get your MaaS LLM token (replace `<your-maas-sa>` with your SA name):
+
+[.copypaste,source,bash]
+----
+oc get sa -n maas-default-gateway-tier-enterprise
+----
+
+[.copypaste,source,bash]
+----
+LLM_TOKEN=$(oc create token <your-maas-sa> -n maas-default-gateway-tier-enterprise \
+  --audience=maas-default-gateway-sa --duration=24h)
+----
+
+Get the Whisper STT token:
+
+[.copypaste,source,bash]
+----
+STT_TOKEN=$(oc get secret whisper-sa-whisper-sa -o jsonpath='{.data.token}' | base64 -d)
+WHISPER_URL=$(oc get llmisvc whisper -o jsonpath='{.status.addresses[?(@.type=="gateway-external")].url}' \
+  | tr ' ' '\n' | grep https)
+----
+
+=== Helm Install
+
+Deploy the app with the collected credentials:
+
+[.copypaste,source,bash]
+----
+helm upgrade --install ai-voice-agent ai-voice-agent/deploy/chart \
+  --namespace ai-roadshow \
+  --set backend.env.MODEL_NAME=llama-4-scout-17b-16e-w4a16 \
+  --set backend.env.BASE_URL=https://maas.apps.ocp.cloud.rhai-tmm.dev/prelude-maas/llama-4-scout-17b-16e-w4a16/v1 \
+  --set backend.env.TTS_URL=http://higgs-audio-predictor:8080/v1 \
+  --set backend.env.TTS_MODEL=higgs-audio-v2-generation-3B-base \
+  --set backend.env.STT_URL="${WHISPER_URL}/v1/audio/transcriptions" \
+  --set backend.env.STT_MODEL=whisper \
+  --set backend.secret.API_KEY="${LLM_TOKEN}" \
+  --set backend.secret.STT_TOKEN="${STT_TOKEN}" \
+  --set mlflow.enabled=false \
+  --set guardrails.enabled=false \
+  --set nemoGuardrails.enabled=false
+----
+
+=== Wait for Pods
+
+[.copypaste,source,bash]
+----
+oc rollout status deployment/ai-voice-agent-backend --timeout=120s
+oc rollout status deployment/ai-voice-agent-frontend --timeout=120s
+oc get pods -l 'app.kubernetes.io/part-of=ai-voice-agent'
+----
+
+=== Get the App URL
+
+[.copypaste,source,bash]
+----
+echo "https://$(oc get route ai-voice-agent -o jsonpath='{.spec.host}')"
+----
+
+Open the URL in your browser. The UI auto-connects to the WebSocket backend.
+
+=== Cleanup
+
+To remove the app (keeps the speech models):
+
+[.copypaste,source,bash]
+----
+helm uninstall ai-voice-agent -n ai-roadshow
+----
