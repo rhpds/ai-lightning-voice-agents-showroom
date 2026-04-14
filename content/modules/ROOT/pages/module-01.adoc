@@ -1,3 +1,18 @@
 = Module 1: TBD
 
 TBD
+
+== Access Your OpenShift Environment
+
+Use the credentials below to access your OpenShift environment.
+
+[cols="1,1",options="header"]
+|===
+| Item | Value
+| Console URL | {openshift_console_url}
+| Username | {user}
+| Password | {password}
+|===
+
+{openshift_console_url}[Open OpenShift Console,window=_blank]
+
