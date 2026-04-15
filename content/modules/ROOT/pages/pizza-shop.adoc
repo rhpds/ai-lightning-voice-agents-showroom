@@ -35,20 +35,18 @@ The fastest way to deploy and test the pizza shop app is the notebook. It gather
 
 === Prerequisites
 
-1. Complete the **Models** notebook first (speech models must be running)
-2. Open a **Terminal** in JupyterLab and log in to OpenShift:
+Open a **Terminal** in JupyterLab and log in to OpenShift:
 
 [.copypaste,source,bash]
 ----
-oc login --server=https://api.ocp.cloud.rhai-tmm.dev:6443 -u <username> -p <password>
-oc project ai-roadshow
+git clone https://github.com/rhai-code/voice-agents.git
 ----
 
 === Open and run
 
 In the _File Explorer_, navigate to `voice-agents/content/notebooks/` and open:
 
-https://github.com/eformat/voice-agents/blob/main/content/notebooks/2-pizza-shop.ipynb[2-pizza-shop.ipynb^]
+https://github.com/rhai-code/voice-agents/blob/main/content/notebooks/2-pizza-shop.ipynb[2-pizza-shop.ipynb^]
 
 Run all cells (**Run > Run All Cells**). The notebook will:
 
@@ -58,11 +56,6 @@ Run all cells (**Run > Run All Cells**). The notebook will:
 4. Wait for backend and frontend pods
 5. Test the agent via WebSocket (text input, no mic needed)
 6. Provide a link to the Web UI
-
-[NOTE]
-====
-The MaaS LLM token requires your personal service account from the enterprise tier namespace. The notebook will prompt you to fill in your SA name. Run `oc get sa -n maas-default-gateway-tier-enterprise` to find it.
-====
 
 If the notebook completes successfully, open the Web UI link and try the voice experience. The rest of this page covers the agent architecture and manual deployment steps.
 

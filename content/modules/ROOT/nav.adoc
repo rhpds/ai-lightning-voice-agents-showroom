@@ -3,9 +3,9 @@
 
 .Workshop
 * xref:overview.adoc[Workshop Overview]
-* xref:getting-connected.adoc[Get Connected]
 
 .Modules
+* xref:getting-connected.adoc[Get Connected]
 * xref:architecture.adoc[Architecture]
 * xref:models.adoc[Speech Models]
 * xref:pizza-shop.adoc[Pizza Shop Demo]

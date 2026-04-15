@@ -38,15 +38,14 @@ Open a **Terminal** in JupyterLab and log in to OpenShift:
 
 [.copypaste,source,bash]
 ----
-oc login --server=https://api.ocp.cloud.rhai-tmm.dev:6443 -u <username> -p <password>
-oc project ai-roadshow
+git clone https://github.com/rhai-code/voice-agents.git
 ----
 
 === Open and run
 
 In the _File Explorer_, navigate to `voice-agents/content/notebooks/` and open:
 
-https://github.com/eformat/voice-agents/blob/main/content/notebooks/1-models.ipynb[1-models.ipynb^]
+https://github.com/rhai-code/voice-agents/blob/main/content/notebooks/1-models.ipynb[1-models.ipynb^]
 
 Run all cells (**Run > Run All Cells**). The notebook will:
 
@@ -74,47 +73,9 @@ If the notebook completes successfully, skip to the next section. The rest of th
 
 == Step-by-step Reference
 
-=== Hugging Face Secret
-
-The Higgs-Audio model downloads weights from Hugging Face. Create a secret with your HF token:
-
-[.copypaste,source,bash]
-----
-oc apply -f - <<EOF
-apiVersion: v1
-kind: Secret
-metadata:
-  name: hf-secret
-type: Opaque
-stringData:
-  token: <your-huggingface-token>
-EOF
-----
-
 === Speech to Text — Whisper
 
 Whisper converts spoken audio into text. We deploy the `whisper-large-v3-turbo` model (quantized W4A16) from the Red Hat model registry using the KServe `LLMInferenceService` custom resource. It runs on a small GPU slice (MIG 1g.18gb).
-
-==== Deploy
-
-[.copypaste,source,bash]
-----
-oc apply -f ai-voice-agent/deploy/models/whisper/whisper-llmisvc.yaml
-----
-
-Wait for the pod to show `2/2 Running`:
-
-[.copypaste,source,bash]
-----
-oc get pods -l app.kubernetes.io/name=whisper
-----
-
-Check the model is ready:
-
-[.copypaste,source,bash]
-----
-oc get llmisvc whisper -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'
-----
 
 ==== Test
 
@@ -122,8 +83,15 @@ Get the model URL and service account token:
 
 [.copypaste,source,bash]
 ----
-MODEL_URL=$(oc get llmisvc whisper -o jsonpath='{.status.addresses[?(@.name=="gateway-external")].url}' | tr ' ' '\n' | grep https)
-ACCESS_TOKEN=$(oc get secret whisper-sa-whisper-sa -o jsonpath='{.data.token}' | base64 -d)
+export MODEL_URL=https://inference.apps.ocp.cloud.rhai-tmm.dev/voice-agents/whisper
+----
+
+Export your MaaS API token:
+
+[.copypaste,source,bash]
+----
+export STT_TOKEN=$(oc get secret maas-secret -o jsonpath='{.data.stt-token}' | base64 -d)
+echo "Token obtained: ${STT_TOKEN:0:20}..."
 ----
 
 Send an audio file to the transcription endpoint:
@@ -131,7 +99,7 @@ Send an audio file to the transcription endpoint:
 [.copypaste,source,bash]
 ----
 curl -s -X POST ${MODEL_URL}/v1/audio/transcriptions \
-  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+  -H "Authorization: Bearer ${STT_TOKEN}" \
   --form file=@test.wav \
   --form model=whisper | jq .
 ----
@@ -153,28 +121,13 @@ Expected response:
 
 Higgs-Audio generates natural-sounding speech from text, completing the voice agent loop. It runs as a standard Kubernetes Deployment with vLLM on a GPU (MIG 2g.35gb slice) and downloads the model from Hugging Face.
 
-==== Deploy
-
-[.copypaste,source,bash]
-----
-oc apply -f ai-voice-agent/deploy/models/higgs-audio/higgs-audio-v2-deployment.yaml
-----
-
-Wait for the pod to show `1/1 Running` (this may take several minutes on first start as it downloads model weights):
-
-[.copypaste,source,bash]
-----
-oc get pods -l app=higgs-audio-predictor
-oc rollout status deployment/higgs-audio-predictor
-----
-
 ==== Test
 
 Send a text prompt to the TTS endpoint:
 
 [.copypaste,source,bash]
 ----
-curl -X POST http://higgs-audio-predictor:8080/v1/audio/speech \
+curl -X POST https://higgs-audio-predictor-voice-agents.apps.ocp.cloud.rhai-tmm.dev/v1/audio/speech \
   -H "Content-Type: application/json" \
   -d '{
     "model": "higgs-audio-v2-generation-3B-base",
@@ -207,7 +160,7 @@ for prompt in \
   "We have pepperoni, mushrooms, olives, onions, and extra cheese available as toppings."
 do
   START=$(date +%s%N)
-  curl -s -X POST http://higgs-audio-predictor:8080/v1/audio/speech \
+  curl -s -X POST https://higgs-audio-predictor-voice-agents.apps.ocp.cloud.rhai-tmm.dev/v1/audio/speech \
     -H "Content-Type: application/json" \
     -d "{\"model\":\"higgs-audio-v2-generation-3B-base\",\"voice\":\"belinda\",\"input\":\"${prompt}\",\"response_format\":\"pcm\"}" \
     --output /tmp/tts-bench.pcm

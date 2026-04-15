@@ -32,7 +32,7 @@ Both FMS and NeMo guardrails plug in as screening layers around the existing age
 
 == Resources
 
-* https://github.com/eformat/voice-agents[Voice Agents on GitHub^]
+* https://github.com/rhai-code/voice-agents[Voice Agents on GitHub^]
 * https://docs.vllm.ai[vLLM Documentation^]
 * https://python.langchain.com[LangChain Documentation^]
 * https://langchain-ai.github.io/langgraph/[LangGraph Documentation^]
