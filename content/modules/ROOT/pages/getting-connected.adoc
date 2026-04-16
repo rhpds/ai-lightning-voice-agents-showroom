@@ -1,5 +1,4 @@
 = Getting Connected
-:source-highlighter: rouge
 
 In this activity, you will connect to your workshop environment and set up a workbench for the lab exercises.
 

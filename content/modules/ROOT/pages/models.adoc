@@ -1,5 +1,4 @@
 = Speech Models
-:source-highlighter: rouge
 
 ++++
 <div id="lightbox"></div>

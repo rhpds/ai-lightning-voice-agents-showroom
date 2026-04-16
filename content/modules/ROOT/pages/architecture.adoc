@@ -1,5 +1,4 @@
 = Architecture
-:source-highlighter: rouge
 :icons: font
 :imagesdir: ../images
 

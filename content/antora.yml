@@ -6,6 +6,7 @@ nav:
 
 asciidoc:
   attributes:
+    source-highlighter: highlight.js
     experimental: true
     page-pagination: true
     showroom-collection-version: v1.5.6

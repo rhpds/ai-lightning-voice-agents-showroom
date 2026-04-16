@@ -1,5 +1,4 @@
 = Observability
-:source-highlighter: rouge
 :icons: font
 
 WARNING: 🚧 This module is under construction. 🚧
