@@ -51,7 +51,13 @@ In this workshop you'll work through five modules:
 * **Architecture** -- The voice sandwich pattern, model stack, WebSocket data flow, and gen-x performance
 * **Speech Models** -- Deploy Whisper (STT) and Higgs-Audio (TTS) on GPU MIG slices, test the APIs, and measure generation speed
 * **Pizza Shop Demo** -- Deploy the multi-agent voice app with Helm, connect everything together, and have a spoken conversation about pizza
+
+[NOTE]
+====
+These modules are not included in this version of the workshop:
+
 * **Observability** -- Monitor agent interactions with MLflow tracing and Llama Stack
 * **Guardrails** -- Add TrustyAI FMS and NeMo guardrails for prompt injection detection and content safety
+====
 
 Click **Architecture** in the navigation to begin.
