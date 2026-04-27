@@ -81,7 +81,7 @@ pip --version && curl --version | head -1
 [.copypaste]
 [source,bash]
 ----
-pip config set global.index-url https://console.redhat.com/api/pypi/public-rhai/rhoai/3.4-EA2/cpu-ubi9/simple/
+pip config set global.index-url https://console.redhat.com/api/pypi/public-rhai/rhoai/3.4/cpu-ubi9/simple/
 ----
 
 . Login from the command line using the credentials provided for the workshop:
