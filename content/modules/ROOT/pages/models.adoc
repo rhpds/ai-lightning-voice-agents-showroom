@@ -44,7 +44,7 @@ git clone https://github.com/rhai-code/voice-agents.git
 
 In the _File Explorer_, navigate to `voice-agents/content/notebooks/` and open:
 
-* `1-models.ipynb`
+https://github.com/rhai-code/voice-agents/blob/main/content/notebooks/1-models.ipynb[1-models.ipynb^]
 
 Run all cells (**Run > Run All Cells**). The notebook will:
 
