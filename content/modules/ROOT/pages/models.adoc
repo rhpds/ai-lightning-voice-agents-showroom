@@ -33,7 +33,7 @@ The fastest way through this section is the notebook. It deploys both models, wa
 
 === Prerequisites
 
-Open a **Terminal** in JupyterLab and log in to OpenShift:
+Open a **Terminal** in JupyterLab and clone the repository:
 
 [.copypaste,source,bash]
 ----
@@ -44,11 +44,11 @@ git clone https://github.com/rhai-code/voice-agents.git
 
 In the _File Explorer_, navigate to `voice-agents/content/notebooks/` and open:
 
-https://github.com/rhai-code/voice-agents/blob/main/content/notebooks/1-models.ipynb[1-models.ipynb^]
+* `1-models.ipynb`
 
 Run all cells (**Run > Run All Cells**). The notebook will:
 
-1. Create the Hugging Face secret (you need to paste your token)
+1. Create the Hugging Face secret
 2. Deploy Whisper and verify it is ready
 3. Generate a test WAV and transcribe it with Whisper
 4. Deploy Higgs-Audio and verify it is ready
@@ -66,11 +66,13 @@ Run all cells (**Run > Run All Cells**). The notebook will:
 Models need GPU resources (MIG slices) and take a few minutes to start. Re-run the wait cells until you see `Ready = True` for Whisper and `1/1 Running` for Higgs-Audio.
 ====
 
-If the notebook completes successfully, skip to the next section. The rest of this page describes each step in detail.
+If the notebook completes successfully, skip to xref:pizza-shop.adoc[Pizza Shop Demo]. The rest of this page describes each step in detail.
 
 '''
 
 == Step-by-step Reference
+
+Go back to the `Terminal` in your workbench.
 
 === Speech to Text — Whisper
 
@@ -99,7 +101,7 @@ Send an audio file to the transcription endpoint:
 ----
 curl -s -X POST ${MODEL_URL}/v1/audio/transcriptions \
   -H "Authorization: Bearer ${STT_TOKEN}" \
-  --form file=@test.wav \
+  --form file=@/opt/app-root/src/voice-agents/ai-voice-agent/backend/belinda.wav \
   --form model=whisper | jq .
 ----
 
@@ -108,10 +110,10 @@ Expected response:
 [source,json]
 ----
 {
-  "text": " Hello.",
+  "text": " \"'Twas the night before my birthday. Hooray! It's almost here! It may not be a holiday, but it's the best day of the year.'\"",
   "usage": {
     "type": "duration",
-    "seconds": 3
+    "seconds": 11
   }
 }
 ----
@@ -122,7 +124,7 @@ Higgs-Audio generates natural-sounding speech from text, completing the voice ag
 
 ==== Test
 
-Send a text prompt to the TTS endpoint:
+Send a text prompt to the TTS endpoint and save the audio to a file:
 
 [.copypaste,source,bash]
 ----
@@ -134,10 +136,10 @@ curl -X POST https://higgs-audio-predictor-voice-agents.apps.ocp.cloud.rhai-tmm.
     "input": "What would you like on your pizza?",
     "response_format": "pcm"
   }' \
-  --output - | ffmpeg -f s16le -ar 24000 -ac 1 -i pipe:0 -f wav - | ffplay -nodisp -autoexit -
+  --output - | ffmpeg -f s16le -ar 24000 -ac 1 -i pipe:0 test-tts.wav
 ----
 
-This sends text to the TTS model, receives PCM audio (signed 16-bit, 24kHz, mono), converts to WAV with ffmpeg, and plays it with ffplay.
+This sends text to the TTS model, receives PCM audio (signed 16-bit, 24kHz, mono), and converts it to WAV. Download `test-tts.wav` through JupyterLab to play it locally.
 
 === Measure TTS Generation Speed (gen x)
 
@@ -168,7 +170,8 @@ do
   WALL_MS=$(( (END - START) / 1000000 ))
   PCM_BYTES=$(stat -c%s /tmp/tts-bench.pcm)
   AUDIO_MS=$(( PCM_BYTES * 1000 / (24000 * 2) ))
-  echo "${prompt}: audio=${AUDIO_MS}ms wall=${WALL_MS}ms gen_x=$(echo "scale=1; ${AUDIO_MS}.0 / ${WALL_MS}.0" | bc)x"
+  GEN_X=$(awk "BEGIN {printf \"%.1f\", ${AUDIO_MS}.0 / ${WALL_MS}.0}")
+  echo "${prompt}: audio=${AUDIO_MS}ms wall=${WALL_MS}ms gen_x=${GEN_X}x"
 done
 ----
 

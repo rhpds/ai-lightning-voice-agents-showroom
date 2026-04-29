@@ -7,10 +7,8 @@ Congratulations! You've completed the Voice Agents workshop.
 == What you accomplished
 
 * **Architecture** -- Learned the voice sandwich pattern (STT → LLM → TTS), the model stack, WebSocket data flow, and gen-x performance considerations for real-time speech
-* **Speech Models** -- Deployed Whisper (STT) and Higgs-Audio (TTS) on GPU MIG slices using KServe and vLLM, tested transcription and speech generation, and measured TTS generation speed
+* **Speech Models** -- Deployed Whisper (STT) and Higgs-Audio (TTS) on GPU MIG slices using KServe and vLLM, tested transcription and speech generation APIs, and measured TTS generation speed
 * **Pizza Shop Demo** -- Deployed a multi-agent voice application with Helm, connecting speech models to a LangGraph supervisor that routes conversations through specialist agents (pizza, order, delivery)
-* **Observability** -- Explored MLflow tracing and Llama Stack for monitoring agent interactions, latency, and model behaviour across the pipeline
-* **Guardrails** -- Configured TrustyAI FMS and NeMo guardrails for input/output screening, prompt injection detection, and content safety
 
 == Key takeaways
 
@@ -20,15 +18,11 @@ Wrapping an LLM agent between STT and TTS layers turns any text-based agent into
 
 === Gen-x determines voice quality
 
-If TTS generation speed (gen x) drops below 1.0, users hear choppy audio or silence gaps. GPU selection matters — an L4 (0.78x) can't keep up with real-time, while an L40S (1.95x) or H200 MIG slice (2-3x) provides smooth playback.
+If TTS generation speed (gen x) drops below 1.0, users hear choppy audio or silence gaps. GPU selection matters — a smaller GPU can't keep up with real-time, while MIG slices on modern GPUs (2-3x gen-x) provide smooth, natural-sounding playback.
 
 === Multi-agent routing keeps conversations natural
 
-The LangGraph supervisor pattern lets specialist agents handle their domain (pizza selection, order totals, delivery) without each agent needing to understand the full conversation. Interrupts allow graceful topic switching mid-conversation.
-
-=== Guardrails add safety without changing agent code
-
-Both FMS and NeMo guardrails plug in as screening layers around the existing agent graph. Input screening catches prompt injection before routing, output screening catches harmful content before TTS. The agent code itself doesn't change.
+The LangGraph supervisor pattern lets specialist agents handle their domain (pizza selection, order totals, delivery) without each agent needing to understand the full conversation. The supervisor analyzes intent and routes to the right agent, creating smooth conversation flows.
 
 == Resources
 
@@ -36,8 +30,7 @@ Both FMS and NeMo guardrails plug in as screening layers around the existing age
 * https://docs.vllm.ai[vLLM Documentation^]
 * https://python.langchain.com[LangChain Documentation^]
 * https://langchain-ai.github.io/langgraph/[LangGraph Documentation^]
-* https://mlflow.org/docs/latest/index.html[MLflow Documentation^]
 
 == Thank you!
 
-We hope you enjoyed this workshop. The combination of speech models, multi-agent orchestration, and guardrails gives you a practical foundation for building voice-enabled AI applications on OpenShift AI.
+We hope you enjoyed this workshop. The combination of speech models and multi-agent orchestration gives you a practical foundation for building voice-enabled AI applications on OpenShift AI.

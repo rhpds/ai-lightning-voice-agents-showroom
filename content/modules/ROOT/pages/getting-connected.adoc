@@ -4,53 +4,47 @@ In this activity, you will connect to your workshop environment and set up a wor
 
 == Login to OpenShift AI
 
-. Open the OpenShift console using the URL provided for your workshop environment.
-
-. Click the **Applications** menu button in the OpenShift toolbar.
-
-. Click **Red Hat OpenShift AI**.
-
-. Log in using the credentials provided for the workshop:
-
 **Username:** `{user}`
 
 **Password:** `{password}`
 
-OpenShift AI displays the main console.
+Once logged in, you'll be greeted with the OpenShift AI dashboard.
 
 == Create a project
 
-. Use the empty **`{user}`-demo** project that has been created for you.
+. A project in OpenShift AI represents an OpenShift namespace. Use the empty **`{user}`-demo** project that has been created for you.
 
 image::project-overview.png[Project Overview,link=self,window=blank,width=700]
 
 == Create a workbench
 
 . Click **Create a workbench** on the project Overview page.
-
++
 image::workbench-create.png[Create Workbench,link=self,window=blank,width=700]
-
++
 . Enter the following details into the *Create workbench* form:
-
++
 **Name:** lab
 
 **Image Selection:** voice-notebook
-
++
 Leave all other settings as defaults.
 
 . Click **Create workbench**
 
 OpenShift AI creates and starts the workbench. Wait for the status to change to *Running*.
 
-image::running-workbench.png[Running Workbench,link=self,window=blank,width=700]
-
 == Open the workbench
 
 . Click **lab** to open *JupyterLab*.
-
-JupyterLab launches in your browser.
++
+image::running-workbench.png[Running Workbench,link=self,window=blank,width=700]
++
+JupyterLab will launch in the browser in a separate tab.
 
 image::jupyterlab-overview.png[JupyterLab Overview,link=self,window=blank,width=700]
+
+TIP: Keep these instructions visible while working in JupyterLab by splitting your screen, using the split view function in your browser or switching between browser tabs as you go.
 
 == Open a terminal
 

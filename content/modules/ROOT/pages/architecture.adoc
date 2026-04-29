@@ -23,7 +23,6 @@ The "voice sandwich" pattern wraps an LLM agent between speech-to-text (STT) and
 * Python WebSocket server
 * Next.js client
 * LangChain agents SDK (LangGraph)
-* MLflow / Llama Stack for observability (optional)
 * WebSockets for client-server communication
 * RHOAI 3.x Platform on AWS
 
@@ -73,9 +72,9 @@ The user records audio in the browser, the UI sends the WAV to the Python WebSoc
 
 Prevent buffering and choppy sound when generating speech.
 
-=== GPU Card
+=== GPU Performance
 
-Measure Text to Speech generation speed early:
+Measure Text to Speech generation speed to ensure smooth, real-time playback:
 
 [.copypaste,source,bash]
 ----
@@ -83,22 +82,9 @@ Measure Text to Speech generation speed early:
 ----
 
 * If `gen x < 1.0` for significant periods, the TTS stream is arriving *slower than realtime* — you will get underruns/chops unless you add more buffering (delay) or pause/rebuffer.
-* If `gen x >= 1.0` consistently, then underruns are coming from client-side issues.
+* If `gen x >= 1.0` consistently, smooth playback is achievable. Above 2.0x provides excellent real-time performance.
 
-[cols="1,1,1,1",options="header"]
-|===
-| Card Details | Cores | AMI Instance Type | Gen-X
-
-| NVIDIA L4 - 24 GB
-| 7,424 CUDA Cores, 240 Tensor Cores (Gen 4), 60 RT Cores (Gen 3)
-| g6-8xlarge
-| 0.78
-
-| NVIDIA L40S - 48 GB
-| 18,176 CUDA Cores, 568 Tensor Cores (Gen 4), 142 RT Cores (Gen 3)
-| g6e-xlarge
-| 1.95
-|===
+In this workshop, you'll deploy TTS on a **MIG 2g.35gb slice** and measure generation speed during the models module. Expect gen-x values around **2–3x** real-time.
 
 ++++
 <div class="imageblock">
@@ -109,3 +95,11 @@ Measure Text to Speech generation speed early:
 === Client Architecture
 
 Javascript client architecture using link:https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer[SharedArrayBuffer^] ring — shared-memory ring buffer (SharedArrayBuffer + Atomics) between main thread and worklet to eliminate per-chunk messaging entirely.
+
+'''
+
+== Next Steps
+
+Now that you understand the voice sandwich architecture and performance considerations, let's deploy the speech models and measure their generation speed in action.
+
+Continue to xref:models.adoc[Speech Models] to deploy Whisper (STT) and Higgs-Audio (TTS).

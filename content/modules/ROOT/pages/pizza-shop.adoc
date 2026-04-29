@@ -32,15 +32,6 @@ Browser Mic → [Whisper STT] → Text → [LLM Agent Graph] → Text → [Higgs
 
 The fastest way to deploy and test the pizza shop app is the notebook. It gathers credentials, runs Helm install, and tests the WebSocket — all from your workbench.
 
-=== Prerequisites
-
-Open a **Terminal** in JupyterLab and log in to OpenShift:
-
-[.copypaste,source,bash]
-----
-git clone https://github.com/rhai-code/voice-agents.git
-----
-
 === Open and run
 
 In the _File Explorer_, navigate to `voice-agents/content/notebooks/` and open:
@@ -56,7 +47,7 @@ Run all cells (**Run > Run All Cells**). The notebook will:
 5. Test the agent via WebSocket (text input, no mic needed)
 6. Provide a link to the Web UI
 
-If the notebook completes successfully, open the Web UI link and try the voice experience. The rest of this page covers the agent architecture and manual deployment steps.
+If the notebook completes successfully, open the **App URL** and try the voice experience. The rest of this page covers the agent architecture and manual deployment steps.
 
 '''
 
