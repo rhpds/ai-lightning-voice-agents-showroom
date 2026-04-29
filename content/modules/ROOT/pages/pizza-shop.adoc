@@ -221,7 +221,9 @@ The system pauses to wait for user input:
 
 '''
 
-== Step-by-step Deployment
+== Step-by-step Reference
+
+The notebook covers each step in detail and is the definitive source. Here is a reference for the steps in case you need to reference them.
 
 === Gather Credentials
 
@@ -229,12 +231,12 @@ The backend needs tokens for the LLM (MaaS), STT (Whisper), and TTS (Higgs-Audio
 
 Get your MaaS LLM token (replace `<your-maas-sa>` with your SA name):
 
-[.copypaste,source,bash]
+[source,bash]
 ----
 oc get sa -n maas-default-gateway-tier-enterprise
 ----
 
-[.copypaste,source,bash]
+[source,bash]
 ----
 LLM_TOKEN=$(oc create token <your-maas-sa> -n maas-default-gateway-tier-enterprise \
   --audience=maas-default-gateway-sa --duration=24h)
@@ -242,7 +244,7 @@ LLM_TOKEN=$(oc create token <your-maas-sa> -n maas-default-gateway-tier-enterpri
 
 Get the Whisper STT token:
 
-[.copypaste,source,bash]
+[source,bash]
 ----
 STT_TOKEN=$(oc get secret whisper-sa-whisper-sa -o jsonpath='{.data.token}' | base64 -d)
 WHISPER_URL=$(oc get llmisvc whisper -o jsonpath='{.status.addresses[?(@.type=="gateway-external")].url}' \
@@ -253,7 +255,7 @@ WHISPER_URL=$(oc get llmisvc whisper -o jsonpath='{.status.addresses[?(@.type=="
 
 Deploy the app with the collected credentials:
 
-[.copypaste,source,bash]
+[source,bash]
 ----
 helm upgrade --install ai-voice-agent ai-voice-agent/deploy/chart \
   --namespace ai-roadshow \
@@ -272,7 +274,7 @@ helm upgrade --install ai-voice-agent ai-voice-agent/deploy/chart \
 
 === Wait for Pods
 
-[.copypaste,source,bash]
+[source,bash]
 ----
 oc rollout status deployment/ai-voice-agent-backend --timeout=120s
 oc rollout status deployment/ai-voice-agent-frontend --timeout=120s
@@ -281,7 +283,7 @@ oc get pods -l 'app.kubernetes.io/part-of=ai-voice-agent'
 
 === Get the App URL
 
-[.copypaste,source,bash]
+[source,bash]
 ----
 echo "https://$(oc get route ai-voice-agent -o jsonpath='{.spec.host}')"
 ----
@@ -292,7 +294,7 @@ Open the URL in your browser. The UI auto-connects to the WebSocket backend.
 
 To remove the app (keeps the speech models):
 
-[.copypaste,source,bash]
+[source,bash]
 ----
 helm uninstall ai-voice-agent -n ai-roadshow
 ----
