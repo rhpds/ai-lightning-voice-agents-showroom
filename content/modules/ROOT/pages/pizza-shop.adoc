@@ -223,7 +223,7 @@ The system pauses to wait for user input:
 
 == Step-by-step Reference
 
-The notebook covers each step in detail and is the definitive source. Here is a reference for the steps in case you need to reference them.
+The notebook covers each step in detail and is the definitive source. Here are the steps in case you need to reference them.
 
 === Gather Credentials
 
