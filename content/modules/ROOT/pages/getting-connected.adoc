@@ -25,7 +25,7 @@ image::workbench-create.png[Create Workbench,link=self,window=blank,width=700]
 . Enter the following details into the *Create workbench* form:
 +
 **Name:** lab
-
++
 **Image Selection:** voice-notebook
 +
 Leave all other settings as defaults.
